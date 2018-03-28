@@ -23,7 +23,16 @@ bar.set_color(Color::Red).unwrap();
 use anybar::*;
 
 // Anybar::new() takes the AnyBar port as parameter
-let mut custom_bar = Anybar::new(1708);
+let mut custom_bar = Anybar::new(1708).unwrap();
+custom_bar.set_color(Color::Exclamation).unwrap();
+```
+
+### Start a new AnyBar instance
+```rust
+use anybar::*;
+
+// Anybar::start() takes the AnyBar port as parameter
+let mut custom_bar = Anybar::start(1708).unwrap();
 custom_bar.set_color(Color::Exclamation).unwrap();
 ```
 

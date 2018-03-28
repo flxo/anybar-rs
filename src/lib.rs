@@ -44,6 +44,7 @@
 //!
 
 use std::net;
+use std::process::{Child, Command};
 
 /// The Anybar handle.
 pub struct Anybar {
@@ -53,6 +54,9 @@ pub struct Anybar {
     ///
     /// When no color has been set yet, color is `None`.
     pub color: Option<Color>,
+
+    /// Optional start anybar child process
+    bar: Option<Child>,
 }
 
 /// The different colors supported by AnyBar.
@@ -98,7 +102,41 @@ impl Anybar {
         if port > 6553 {
             Err(format!("The port {} is not between 0 and 6553!", port))
         } else {
-            Ok(Anybar{port:port, color:None})
+            Ok(Anybar {
+                port,
+                color: None,
+                bar: None,
+            })
+        }
+    }
+
+    /// Create a new Anybar instance, and start a new AnyBar instance
+    /// with the give port.
+    ///
+    /// `port` may be any port between 0 and 6553.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use anybar::*;
+    /// let custom_bar = Anybar::start(1708).unwrap();
+    ///
+    /// assert_eq!(custom_bar.port, 1708);
+    /// ```
+    pub fn start(port: u16) -> Result<Anybar, String> {
+        if port > 6553 {
+            Err(format!("The port {} is not between 0 and 6553!", port))
+        } else {
+            let bar = Command::new("open")
+                    .args(&["-na", "anybar"])
+                    .env("ANYBAR_PORT", format!("{}", port))
+                    .spawn()
+                    .map_err(|e| format!("Failed to start anybar on port {}: {:?}", port, e))?;
+            Ok(Anybar {
+                port,
+                color: None,
+                bar: Some(bar),
+            })
         }
     }
 
@@ -158,6 +196,9 @@ impl Anybar {
     pub fn quit(self) -> Result<(), std::io::Error> {
         Self::socket("127.0.0.1", 0)?
             .send_to(b"quit", ("127.0.0.1", self.port))?;
+        if let Some(mut bar) = self.bar {
+            bar.wait()?;
+        }
         Ok(())
     }
 }
@@ -171,6 +212,6 @@ impl Anybar {
 /// ```
 impl Default for Anybar {
     fn default() -> Self {
-        Anybar{port:1738, color:None}
+        Anybar { port:1738, color: None, bar: None }
     }
 }
